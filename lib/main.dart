@@ -282,6 +282,10 @@ typedef Future<List<T>> ItemsGetter<T>(String query);
 
 // TODO(justinmc): By default, do things like debouncing, displaying everything
 // nicely, etc. BUT allow any of it to be replaced by the user.
+// TODO(justinmc): Check all parameters taken by flutter_typeahead and see if
+// they might be useful to add here.
+// TODO(justinmc): Make sure this could actually be used as a simple form field
+// in a larger form.
 class Autocomplete<T> extends StatefulWidget {
   Autocomplete({
     this.getItems,
