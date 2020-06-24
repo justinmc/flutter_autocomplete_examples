@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 void main() {
   runApp(MyApp());
 }
+
+const List<String> _results = <String>[
+  'aardvark',
+  'baboon',
+  'chameleon',
+  'dingo',
+  'elephant',
+  'flamingo',
+  'goose',
+  'hippopotamus',
+  'iguana',
+  'jaguar',
+  'koala',
+  'lemur',
+  'mouse',
+  'northern white rhinocerous',
+];
 
 class MyApp extends StatelessWidget {
   @override
@@ -17,6 +35,7 @@ class MyApp extends StatelessWidget {
       routes: <String, Widget Function(BuildContext)>{
         '/': (BuildContext context) => MyHomePage(title: 'Flutter Demo Home Page'),
         '/typeahead': (BuildContext context) => TypeaheadPage(),
+        '/vanilla': (BuildContext context) => VanillaPage(),
       },
     );
   }
@@ -53,6 +72,16 @@ class MyHomePage extends StatelessWidget {
               },
               child: ListTile(
                 title: const Text('Typeahead Example'),
+                subtitle: const Text('Package broken on Mac?'),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).pushNamed('/vanilla');
+              },
+              child: ListTile(
+                title: const Text('Vanilla Example'),
+                subtitle: const Text('Custom'),
               ),
             ),
           ],
@@ -112,25 +141,8 @@ class CustomSearchDelegate extends SearchDelegate {
     }
     */
 
-    final List<String> results = <String>[
-      'aardvark',
-      'baboon',
-      'chameleon',
-      'dingo',
-      'elephant',
-      'flamingo',
-      'goose',
-      'hippopotamus',
-      'iguana',
-      'jaguar',
-      'koala',
-      'lemur',
-      'mouse',
-      'northern white rhinocerous',
-    ];
-
     /*
-    if (results.isEmpty()) {
+    if (_results.isEmpty()) {
       return Column(
         children: <Widget>[
           Text(
@@ -142,9 +154,9 @@ class CustomSearchDelegate extends SearchDelegate {
     */
 
     return ListView.builder(
-      itemCount: results.length,
+      itemCount: _results.length,
       itemBuilder: (context, index) {
-        var result = results[index];
+        var result = _results[index];
         return ListTile(
           title: Text(result),
         );
@@ -157,14 +169,23 @@ class CustomSearchDelegate extends SearchDelegate {
     return ListView(
       children: <Widget>[
         ListTile(
-          title: const Text('ok'),
+          title: const Text('suggestion1'),
         ),
         ListTile(
-          title: const Text('yes'),
+          title: const Text('suggestion2'),
         ),
       ],
     );
   }
+}
+
+class Item {
+  Item({
+    this.name = 'Unnamed',
+  });
+
+  final String name;
+  final double price = 1.99;
 }
 
 class TypeaheadPage extends StatelessWidget {
@@ -177,7 +198,54 @@ class TypeaheadPage extends StatelessWidget {
         title: const Text('Typeahead Example'),
       ),
       body: Center(
-        child: const Text('TODO'),
+        child: TypeAheadField(
+          textFieldConfiguration: TextFieldConfiguration(
+            autofocus: true,
+            style: DefaultTextStyle.of(context).style.copyWith(
+              fontStyle: FontStyle.italic
+            ),
+            decoration: InputDecoration(
+              border: OutlineInputBorder()
+            )
+          ),
+          suggestionsCallback: (pattern) async {
+            return Future<List<Item>>.delayed(const Duration(seconds: 2), () {
+              return _results.map((String result) => Item(name: result)).toList();
+            });
+          },
+          itemBuilder: (context, Item suggestion) {
+            return ListTile(
+              leading: Icon(Icons.shopping_cart),
+              title: Text(suggestion.name),
+              subtitle: Text('\$${suggestion.price}'),
+            );
+          },
+          onSuggestionSelected: (suggestion) {
+            print('justin selected ${suggestion.name}');
+            Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class VanillaPage extends StatelessWidget {
+  VanillaPage({Key key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Typeahead Example'),
+      ),
+      body: Center(
+        child: Column(
+          children: <Widget>[
+            TextFormField(
+            ),
+          ],
+        ),
       ),
     );
   }
