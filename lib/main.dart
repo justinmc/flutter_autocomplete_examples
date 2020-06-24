@@ -13,7 +13,11 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      initialRoute: '/',
+      routes: <String, Widget Function(BuildContext)>{
+        '/': (BuildContext context) => MyHomePage(title: 'Flutter Demo Home Page'),
+        '/typeahead': (BuildContext context) => TypeaheadPage(),
+      },
     );
   }
 }
@@ -41,6 +45,14 @@ class MyHomePage extends StatelessWidget {
               },
               child: ListTile(
                 title: const Text('SearchDelegate Example'),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).pushNamed('/typeahead');
+              },
+              child: ListTile(
+                title: const Text('Typeahead Example'),
               ),
             ),
           ],
@@ -151,6 +163,22 @@ class CustomSearchDelegate extends SearchDelegate {
           title: const Text('yes'),
         ),
       ],
+    );
+  }
+}
+
+class TypeaheadPage extends StatelessWidget {
+  TypeaheadPage({Key key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Typeahead Example'),
+      ),
+      body: Center(
+        child: const Text('TODO'),
+      ),
     );
   }
 }
