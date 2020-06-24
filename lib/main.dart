@@ -228,7 +228,7 @@ class TypeaheadPage extends StatelessWidget {
             );
           },
           onSuggestionSelected: (suggestion) {
-            print('justin selected ${suggestion.name}');
+            print('selected ${suggestion.name}');
             Navigator.of(context).pop();
           },
         ),
@@ -257,19 +257,8 @@ class Debounce {
   static Timer timer;
 }
 
-// TODO(justinmc): By default, do things like debouncing, displaying everything
-// nicely, but allow any of it to be replaced by the user!
-class VanillaPage extends StatefulWidget {
+class VanillaPage extends StatelessWidget {
   VanillaPage({Key key}) : super(key: key);
-
-  @override
-  VanillaPageState createState() => VanillaPageState();
-}
-
-class VanillaPageState extends State<VanillaPage> {
-  final TextEditingController _controller = TextEditingController();
-  List<Item> _items = <Item>[];
-  bool _loading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -278,51 +267,86 @@ class VanillaPageState extends State<VanillaPage> {
         title: const Text('Typeahead Example'),
       ),
       body: Center(
-        child: Column(
-          children: <Widget>[
-            TextFormField(
-              controller: _controller,
-              decoration: InputDecoration(
-                hintText: 'Search here!',
-              ),
-              onChanged: (String value) {
-                setState(() {
-                  _loading = true;
-                });
-                Debounce(
-                  duration: const Duration(seconds: 1),
-                  callback: () async {
-                    // TODO(justinmc): Error handling.
-                    final List<Item> items = await Backend.getItems();
-                    setState(() {
-                      _loading = false;
-                      _items = items;
-                    });
-                  },
-                );
-              },
-            ),
-            Expanded(
-              child: ListView(
-                children: _loading
-                    ? <Widget>[const Text('Loading!')]
-                    : _items.map((Item item) => GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _items = <Item>[];
-                          _controller.text = item.name;
-                        });
-                      },
-                      child: ListTile(
-                        title: Text(item.name),
-                        subtitle: Text('\$${item.price}'),
-                      ),
-                    )).toList(),
-              ),
-            ),
-          ],
+        child: Autocomplete<Item>(
+          getItems: (String query) {
+            return Backend.getItems();
+          },
         ),
       ),
+    );
+  }
+}
+
+// TODO(justinmc): Should be FutureOr for synchronous support.
+typedef Future<List<T>> ItemsGetter<T>(String query);
+
+// TODO(justinmc): By default, do things like debouncing, displaying everything
+// nicely, etc. BUT allow any of it to be replaced by the user.
+class Autocomplete<T> extends StatefulWidget {
+  Autocomplete({
+    this.getItems,
+  });
+
+  final ItemsGetter<T> getItems;
+
+  @override
+  AutocompleteState createState() => AutocompleteState();
+}
+
+class AutocompleteState extends State<Autocomplete> {
+  final TextEditingController _controller = TextEditingController();
+  List<Item> _items = <Item>[];
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        TextFormField(
+          controller: _controller,
+          decoration: InputDecoration(
+            hintText: 'Search here!',
+          ),
+          onChanged: (String value) {
+            setState(() {
+              _loading = true;
+            });
+            // TODO(justinmc): For example, debouncing should be done by
+            // default, but the user should be able to disable it, do their own
+            // debouncing, etc.  Ideally this wouldn't be done with lots of
+            // different config parameters.
+            Debounce(
+              duration: const Duration(seconds: 1),
+              callback: () async {
+                // TODO(justinmc): Error handling.
+                final List<Item> items = await widget.getItems(value);
+                setState(() {
+                  _loading = false;
+                  _items = items;
+                });
+              },
+            );
+          },
+        ),
+        Expanded(
+          child: ListView(
+            children: _loading
+                ? <Widget>[const Text('Loading!')]
+                : _items.map((Item item) => GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _items = <Item>[];
+                      _controller.text = item.name;
+                    });
+                  },
+                  child: ListTile(
+                    title: Text(item.name),
+                    subtitle: Text('\$${item.price}'),
+                  ),
+                )).toList(),
+          ),
+        ),
+      ],
     );
   }
 }
