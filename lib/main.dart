@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 
@@ -188,6 +189,14 @@ class Item {
   final double price = 1.99;
 }
 
+class Backend {
+  static Future<List<Item>>getItems() {
+    return Future<List<Item>>.delayed(const Duration(seconds: 2), () {
+      return _results.map((String result) => Item(name: result)).toList();
+    });
+  }
+}
+
 class TypeaheadPage extends StatelessWidget {
   TypeaheadPage({Key key}) : super(key: key);
 
@@ -208,10 +217,8 @@ class TypeaheadPage extends StatelessWidget {
               border: OutlineInputBorder()
             )
           ),
-          suggestionsCallback: (pattern) async {
-            return Future<List<Item>>.delayed(const Duration(seconds: 2), () {
-              return _results.map((String result) => Item(name: result)).toList();
-            });
+          suggestionsCallback: (pattern) {
+            return Backend.getItems();
           },
           itemBuilder: (context, Item suggestion) {
             return ListTile(
@@ -230,8 +237,39 @@ class TypeaheadPage extends StatelessWidget {
   }
 }
 
-class VanillaPage extends StatelessWidget {
+// TODO(justinmc): A real debounce class should maybe operate on a per-callback
+// basis.
+class Debounce {
+  Debounce({
+    VoidCallback callback,
+    Duration duration,
+  }) : assert(callback != null),
+       assert(duration != null) {
+    if (timer != null) {
+      timer.cancel();
+    }
+    timer = Timer(duration, () {
+      timer.cancel();
+      callback();
+    });
+  }
+
+  static Timer timer;
+}
+
+// TODO(justinmc): By default, do things like debouncing, displaying everything
+// nicely, but allow any of it to be replaced by the user!
+class VanillaPage extends StatefulWidget {
   VanillaPage({Key key}) : super(key: key);
+
+  @override
+  VanillaPageState createState() => VanillaPageState();
+}
+
+class VanillaPageState extends State<VanillaPage> {
+  final TextEditingController _controller = TextEditingController();
+  List<Item> _items = <Item>[];
+  bool _loading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -243,6 +281,44 @@ class VanillaPage extends StatelessWidget {
         child: Column(
           children: <Widget>[
             TextFormField(
+              controller: _controller,
+              decoration: InputDecoration(
+                hintText: 'Search here!',
+              ),
+              onChanged: (String value) {
+                setState(() {
+                  _loading = true;
+                });
+                Debounce(
+                  duration: const Duration(seconds: 1),
+                  callback: () async {
+                    // TODO(justinmc): Error handling.
+                    final List<Item> items = await Backend.getItems();
+                    setState(() {
+                      _loading = false;
+                      _items = items;
+                    });
+                  },
+                );
+              },
+            ),
+            Expanded(
+              child: ListView(
+                children: _loading
+                    ? <Widget>[const Text('Loading!')]
+                    : _items.map((Item item) => GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _items = <Item>[];
+                          _controller.text = item.name;
+                        });
+                      },
+                      child: ListTile(
+                        title: Text(item.name),
+                        subtitle: Text('\$${item.price}'),
+                      ),
+                    )).toList(),
+              ),
             ),
           ],
         ),
