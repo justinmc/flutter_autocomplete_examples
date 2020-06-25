@@ -255,6 +255,13 @@ class Debounce {
   }
 
   static Timer timer;
+
+  static void dispose() {
+    if (timer != null) {
+      timer.cancel();
+      timer = null;
+    }
+  }
 }
 
 class VanillaPage extends StatelessWidget {
@@ -303,6 +310,12 @@ class AutocompleteState extends State<Autocomplete> {
   bool _loading = false;
 
   @override
+  void dispose() {
+    Debounce.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
@@ -324,10 +337,12 @@ class AutocompleteState extends State<Autocomplete> {
               callback: () async {
                 // TODO(justinmc): Error handling.
                 final List<Item> items = await widget.getItems(value);
-                setState(() {
-                  _loading = false;
-                  _items = items;
-                });
+                if (mounted) {
+                  setState(() {
+                    _loading = false;
+                    _items = items;
+                  });
+                }
               },
             );
           },
